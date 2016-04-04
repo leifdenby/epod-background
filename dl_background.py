@@ -29,6 +29,11 @@ def replace_with_newlines(element):
             text += '\n\n'
     return text
 
+def extract_paragraphs(description_els):
+    paragraphs = [replace_with_newlines(el).strip() for el in description_els]
+    paragraphs = filter(lambda p: len(p) > 0, paragraphs)
+    return paragraphs
+
 
 w = 1920
 h = 1200
@@ -45,11 +50,11 @@ img_url = img_el.get('src')
 r = requests.get(img_url, stream=True)
 
 description_els = soup.find('div', {'class': 'entry-body'}).findAll('p')
-if len(description_els) == 0:
-    description_els = soup.find('div', {'class': 'entry-body'}).findAll('div')
+paragraphs = extract_paragraphs(description_els)
 
-paragraphs = [replace_with_newlines(el).strip() for el in description_els]
-paragraphs = filter(lambda p: len(p) > 0, paragraphs)
+if len(paragraphs) == 0:
+    description_els = soup.find('div', {'class': 'entry-body'}).findAll('div')
+    paragraphs = extract_paragraphs(description_els)
 
 lines = []
 
@@ -68,6 +73,11 @@ with open(filename_source, 'wb') as fd:
         fd.write(chunk)
 
 img_source = Image.open(filename_source)
+
+# the maximum size of the image scaled into the middle
+max_size = (w*0.6, h*0.4,)
+img_source.thumbnail(max_size, Image.ANTIALIAS)
+
 img_w, img_h = img_source.size
 
 img = Image.new('RGBA', (w, h), (0, 0, 0, 255))
