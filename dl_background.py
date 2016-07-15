@@ -32,6 +32,7 @@ def replace_with_newlines(element):
 def extract_paragraphs(description_els):
     paragraphs = [replace_with_newlines(el).strip() for el in description_els]
     paragraphs = filter(lambda p: len(p) > 0, paragraphs)
+
     return paragraphs
 
 
@@ -54,6 +55,8 @@ paragraphs = extract_paragraphs(description_els)
 
 if len(paragraphs) == 0:
     description_els = soup.find('div', {'class': 'entry-body'}).findAll('div')
+    # get rid of nested DIVs
+    description_els = filter(lambda el: len(el.findAll('div')) == 0, description_els)
     paragraphs = extract_paragraphs(description_els)
 
 lines = []
