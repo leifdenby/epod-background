@@ -109,12 +109,16 @@ if font is None:
     raise Exception("Couldn't find a font to use")
 
 
-y_text = (h + img_h) / 2
+y_text = (h + img_h) / 2 + 20
 
 msg = "\n\n".join([textwrap.fill(p, width=textwidth) for p in paragraphs])
+line0_width = None
+
 for line in msg.splitlines():
     width, height = font.getsize(line)
-    draw.text(((w - width) / 2, y_text), line, font=font, fill=(255, 255, 255))
+    if line0_width is None:
+        line0_width = width
+    draw.text(((w - line0_width) / 2, y_text), line, font=font, fill=(255, 255, 255))
     y_text += height
 
 img.save(filename)
