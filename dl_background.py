@@ -19,6 +19,20 @@ import types
 from PIL import Image, ImageFont, ImageDraw 
 import bs4
 import requests
+import matplotlib.font_manager as fontman
+
+
+FONTS = ['Ariel.ttf', 'sans_serif.ttf', 'verdana.ttf']
+
+def find_font_file(query):
+    """
+    Use matplotlib font manager to find a system font
+    https://stackoverflow.com/questions/15365405/python-finding-ttf-files
+
+    query should full filename e.g. "verdana.ttf"
+    """
+    matches = filter(lambda path: query in os.path.basename(path), fontman.findSystemFonts())
+    return matches
 
 def replace_with_newlines(element):
     text = ''
@@ -59,13 +73,6 @@ if len(paragraphs) == 0:
     description_els = filter(lambda el: len(el.findAll('div')) == 0, description_els)
     paragraphs = extract_paragraphs(description_els)
 
-lines = []
-
-for p in paragraphs:
-    lines.append(textwrap.fill(p, width=textwidth))
-
-msg = "\n\n".join(lines)
-
 
 filename_source = '%s/background-source.jpeg' % os.environ['HOME']
 filename = '%s/background.jpeg' % os.environ['HOME']
@@ -78,7 +85,7 @@ with open(filename_source, 'wb') as fd:
 img_source = Image.open(filename_source)
 
 # the maximum size of the image scaled into the middle
-max_size = (w*0.6, h*0.4,)
+max_size = (int(w*0.6), int(h*0.4,))
 img_source.thumbnail(max_size, Image.ANTIALIAS)
 
 img_w, img_h = img_source.size
@@ -88,14 +95,26 @@ offset = ((w - img_w) / 2, (h - img_h) / 2)
 img.paste(img_source, offset)
 
 draw = ImageDraw.Draw(img)
-# font = ImageFont.truetype(<font-file>, <font-size>)
-# font = ImageFont.truetype("sans-serif.ttf", 16)
-font = ImageFont.truetype('/usr/share/fonts/truetype/msttcorefonts/Arial.ttf', 16, encoding='unic')
 
-w_t, h_t = font.getsize(msg)
+font = None
+for font_name in FONTS:
+    try:
+        font_filename = find_font_file(font_name)[0]
+        font = ImageFont.truetype(font_filename, 16, encoding='unic')
+        break
+    except IndexError:
+        pass
 
-w_t = 6*textwidth
-h_t = 33*msg.count('\n')
+if font is None:
+    raise Exception("Couldn't find a font to use")
 
-draw.text(((w-w_t)/2, h - h_t/2-100), msg,(255,255,255) ,font=font)
+
+y_text = (h + img_h) / 2
+
+msg = "\n\n".join([textwrap.fill(p, width=textwidth) for p in paragraphs])
+for line in msg.splitlines():
+    width, height = font.getsize(line)
+    draw.text(((w - width) / 2, y_text), line, font=font, fill=(255, 255, 255))
+    y_text += height
+
 img.save(filename)
